@@ -21,6 +21,8 @@ func BuildRules() *Rules {
 	rules.boolRules["allowHostNetwork"] = false
 
 	rules.typeRules["runAsUser"] = "MustRunAsRange"
+	rules.typeRules["seLinuxContext"] = "MustRunAs"
+	rules.typeRules["fsGroup"] = "MustRunAs"
 
 	return rules
 }
@@ -41,6 +43,16 @@ func (rules *Rules) EvaluateSCC(scc *openshiftsecurityv1.SecurityContextConstrai
 	if string(scc.RunAsUser.Type) != rules.typeRules["runAsUser"] {
 		msg := "'runAsUser.type: " + string(scc.RunAsUser.Type) + "' is set. This setting allows containers to run as insecure UIDs on the underlying host."
 		sccEvaluation["runAsUser"] = msg
+	}
+
+	if string(scc.SELinuxContext.Type) != rules.typeRules["seLinuxContext"] {
+		msg := "'seLinuxContext.type: " + string(scc.SELinuxContext.Type) + "' is set. This setting allows containers to run in permissive SELinux contexts."
+		sccEvaluation["seLinuxContext"] = msg
+	}
+
+	if string(scc.FSGroup.Type) != rules.typeRules["fsGroup"] {
+		msg := "'fsGroup.type: " + string(scc.FSGroup.Type) + "' is set. This setting allows pod processes run as a predefined supplementary group ID."
+		sccEvaluation["fsGroup"] = msg
 	}
 
 	return sccEvaluation
