@@ -19,6 +19,7 @@ func BuildRules() *Rules {
 
 	rules.boolRules["allowHostIPC"] = false
 	rules.boolRules["allowHostNetwork"] = false
+	rules.boolRules["allowPrivilegedContainer"] = false
 
 	rules.typeRules["runAsUser"] = "MustRunAsRange"
 	rules.typeRules["seLinuxContext"] = "MustRunAs"
@@ -31,27 +32,32 @@ func (rules *Rules) EvaluateSCC(scc *openshiftsecurityv1.SecurityContextConstrai
 	sccEvaluation := make(map[string]string)
 
 	if scc.AllowHostIPC != rules.boolRules["allowHostIPC"] {
-		msg := "'allowHostIPC: " + strconv.FormatBool(scc.AllowHostIPC) + "' is set. This setting allows containers to access the underlying host's IPC namespace."
+		msg := "allowHostIPC: " + strconv.FormatBool(scc.AllowHostIPC)
 		sccEvaluation["allowHostIPC"] = msg
 	}
 
 	if scc.AllowHostNetwork != rules.boolRules["allowHostNetwork"] {
-		msg := "'allowHostNetwork: " + strconv.FormatBool(scc.AllowHostNetwork) + "' is set. This setting allows containers to access the underlying host's network namespace."
+		msg := "allowHostNetwork: " + strconv.FormatBool(scc.AllowHostNetwork)
 		sccEvaluation["allowHostNetwork"] = msg
 	}
 
+	if scc.AllowPrivilegedContainer != rules.boolRules["allowPrivilegedContainer"] {
+		msg := "allowPrivilegedContainer: " + strconv.FormatBool(scc.AllowPrivilegedContainer)
+		sccEvaluation["allowPrivilegedContainer"] = msg
+	}
+
 	if string(scc.RunAsUser.Type) != rules.typeRules["runAsUser"] {
-		msg := "'runAsUser.type: " + string(scc.RunAsUser.Type) + "' is set. This setting allows containers to run as insecure UIDs on the underlying host."
+		msg := "runAsUser.type: " + string(scc.RunAsUser.Type)
 		sccEvaluation["runAsUser"] = msg
 	}
 
 	if string(scc.SELinuxContext.Type) != rules.typeRules["seLinuxContext"] {
-		msg := "'seLinuxContext.type: " + string(scc.SELinuxContext.Type) + "' is set. This setting allows containers to run in permissive SELinux contexts."
+		msg := "seLinuxContext.type: " + string(scc.SELinuxContext.Type)
 		sccEvaluation["seLinuxContext"] = msg
 	}
 
 	if string(scc.FSGroup.Type) != rules.typeRules["fsGroup"] {
-		msg := "'fsGroup.type: " + string(scc.FSGroup.Type) + "' is set. This setting allows pod processes run as a predefined supplementary group ID."
+		msg := "fsGroup.type: " + string(scc.FSGroup.Type)
 		sccEvaluation["fsGroup"] = msg
 	}
 
