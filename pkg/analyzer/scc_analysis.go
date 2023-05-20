@@ -31,6 +31,7 @@ func BuildRules() *Rules {
 
 	rules.listRules["volumes"] = append(rules.listRules["volumes"],
 		"configMap", "downwardAPI", "emptyDir", "persistentVolumeClaim", "projected", "secret")
+	rules.listRules["allowedCapabilities"] = append(rules.listRules["allowedCapabilities"], "NET_BIND_SERVICE")
 
 	return rules
 }
@@ -47,8 +48,8 @@ func (rules *Rules) EvaluateSCC(scc *openshiftsecurityv1.SecurityContextConstrai
 
 func (rules *Rules) EvaluateLists(evaluation *map[string]string,
 	scc *openshiftsecurityv1.SecurityContextConstraints) {
-	var violatingItems []string
 	for rule := range rules.listRules {
+		var violatingItems []string
 		field := reflect.ValueOf(scc).Elem().FieldByNameFunc(func(fieldName string) bool {
 			return strings.EqualFold(fieldName, rule)
 		})
