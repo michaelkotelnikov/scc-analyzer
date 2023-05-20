@@ -1,50 +1,87 @@
 # scc-analyzer
 
 ```
-./scc-analyzer --namespace prometheus-michael
+$ scc-analyzer --namespace prometheus-michael --expand
 +--------------------+-----------------+--------------------------------+------------+
 |     NAMESPACE      | SERVICE ACCOUNT |        RULE DESCRIPTION        |    SCC     |
 +--------------------+-----------------+--------------------------------+------------+
-| prometheus-michael | default         | 'allowHostNetwork: true'       | privileged |
-|                    |                 | is set. This setting allows    |            |
-|                    |                 | containers to access the       |            |
-|                    |                 | underlying host's network      |            |
-|                    |                 | namespace.                     |            |
+| prometheus-michael | default         | runAsUser.type: RunAsAny       | privileged |
 +                    +                 +--------------------------------+------------+
-|                    |                 | 'runAsUser.type: RunAsAny'     | privileged |
-|                    |                 | is set. This setting allows    |            |
-|                    |                 | containers to run as insecure  |            |
-|                    |                 | UIDs on the underlying host.   |            |
+|                    |                 | seLinuxContext.type: RunAsAny  | privileged |
 +                    +                 +--------------------------------+------------+
-|                    |                 | 'allowHostIPC: true' is set.   | privileged |
-|                    |                 | This setting allows containers |            |
-|                    |                 | to access the underlying       |            |
-|                    |                 | host's IPC namespace.          |            |
+|                    |                 | allowHostNetwork: true         | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | allowHostPorts: true           | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | allowPrivilegeEscalation: true | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | fsGroup.type: RunAsAny         | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | allowHostIPC: true             | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | allowPrivilegedContainer: true | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | allowHostDirVolumePlugin: true | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | allowHostPID: true             | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | volumes: [*]                   | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | allowedCapabilities: [*]       | privileged |
 +                    +-----------------+--------------------------------+------------+
-|                    | michael         | 'allowHostIPC: true' is set.   | privileged |
-|                    |                 | This setting allows containers |            |
-|                    |                 | to access the underlying       |            |
-|                    |                 | host's IPC namespace.          |            |
+|                    | michael         | allowHostNetwork: true         | privileged |
 +                    +                 +--------------------------------+------------+
-|                    |                 | 'allowHostNetwork: true'       | privileged |
-|                    |                 | is set. This setting allows    |            |
-|                    |                 | containers to access the       |            |
-|                    |                 | underlying host's network      |            |
-|                    |                 | namespace.                     |            |
+|                    |                 | allowPrivilegedContainer: true | privileged |
 +                    +                 +--------------------------------+------------+
-|                    |                 | 'runAsUser.type: RunAsAny'     | privileged |
-|                    |                 | is set. This setting allows    |            |
-|                    |                 | containers to run as insecure  |            |
-|                    |                 | UIDs on the underlying host.   |            |
+|                    |                 | allowHostDirVolumePlugin: true | privileged |
 +                    +                 +--------------------------------+------------+
-|                    |                 | 'runAsUser.type:               | nonroot    |
-|                    |                 | MustRunAsNonRoot' is set. This |            |
-|                    |                 | setting allows containers to   |            |
-|                    |                 | run as insecure UIDs on the    |            |
-|                    |                 | underlying host.               |            |
+|                    |                 | allowHostPorts: true           | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | allowPrivilegeEscalation: true | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | runAsUser.type: RunAsAny       | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | seLinuxContext.type: RunAsAny  | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | fsGroup.type: RunAsAny         | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | allowedCapabilities: [*]       | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | allowHostIPC: true             | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | allowHostPID: true             | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | volumes: [*]                   | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | runAsUser.type:                | nonroot    |
+|                    |                 | MustRunAsNonRoot               |            |
++                    +                 +--------------------------------+------------+
+|                    |                 | fsGroup.type: RunAsAny         | nonroot    |
++                    +                 +--------------------------------+------------+
+|                    |                 | allowPrivilegeEscalation: true | nonroot    |
 +                    +-----------------+--------------------------------+------------+
-|                    | prometheus      | 'allowHostIPC: true' is set.   | privileged |
-|                    |                 | This setting allows containers |            |
-|                    |                 | to access the underlying       |            |
-|                    |                 | host's IPC namespace.          |            |
+|                    | prometheus      | runAsUser.type: RunAsAny       | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | allowHostIPC: true             | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | allowHostNetwork: true         | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | allowPrivilegedContainer: true | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | allowHostDirVolumePlugin: true | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | allowHostPID: true             | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | seLinuxContext.type: RunAsAny  | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | fsGroup.type: RunAsAny         | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | allowHostPorts: true           | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | allowPrivilegeEscalation: true | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | volumes: [*]                   | privileged |
++                    +                 +--------------------------------+------------+
+|                    |                 | allowedCapabilities: [*]       | privileged |
++--------------------+-----------------+--------------------------------+------------+
 ```
