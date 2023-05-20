@@ -20,7 +20,11 @@ type Rules struct {
 }
 
 func BuildRules() *Rules {
-	rules := &Rules{}
+	rules := &Rules{
+		BoolRules: make([]Rule, 0),
+		TypeRules: make([]Rule, 0),
+		ListRules: make([]Rule, 0),
+	}
 
 	rules.BoolRules = []Rule{
 		{Field: "allowHostIPC", Value: false},
@@ -83,6 +87,7 @@ func (rules *Rules) EvaluateLists(evaluation *map[string]string,
 						for _, listItem := range ruleValues {
 							if listItem == sccItem {
 								violation = false
+
 								break
 							}
 

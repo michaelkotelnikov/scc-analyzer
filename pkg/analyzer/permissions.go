@@ -21,38 +21,38 @@ type Permissions struct {
 }
 
 func BuildPermissions(client *kube.Client, namespace string) (*Permissions, error) {
-	permissions := &Permissions{}
-
-	permissions.Namespace = namespace
-	permissions.ServiceAccounts = make([]v1.ServiceAccount, 0)
-	permissions.ClusterRoles = make([]rbacv1.ClusterRole, 0)
-	permissions.ClusterRoleBindings = make([]rbacv1.ClusterRoleBinding, 0)
-	permissions.SecurityContextConstraints = make([]openshiftsecurityv1.SecurityContextConstraints, 0)
+	permissions := &Permissions{
+		Namespace:                  namespace,
+		ServiceAccounts:            make([]v1.ServiceAccount, 0),
+		ClusterRoles:               make([]rbacv1.ClusterRole, 0),
+		ClusterRoleBindings:        make([]rbacv1.ClusterRoleBinding, 0),
+		SecurityContextConstraints: make([]openshiftsecurityv1.SecurityContextConstraints, 0),
+	}
 
 	sas, err := client.GetServiceAccounts(namespace)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve ServiceAccounts: %v", err)
+		return nil, fmt.Errorf("failed to retrieve ServiceAccounts: %w", err)
 	}
 
 	permissions.ServiceAccounts = sas
 
 	crs, err := client.GetClusterRoles()
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve ClusterRoles: %v", err)
+		return nil, fmt.Errorf("failed to retrieve ClusterRoles: %w", err)
 	}
 
 	permissions.ClusterRoles = crs
 
 	crbs, err := client.GetClusterRoleBindings()
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve ClusterRoleBindings: %v", err)
+		return nil, fmt.Errorf("failed to retrieve ClusterRoleBindings: %w", err)
 	}
 
 	permissions.ClusterRoleBindings = crbs
 
 	sccs, err := client.GetSecurityContextConstraints()
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve SecurityContextConstraints: %v", err)
+		return nil, fmt.Errorf("failed to retrieve SecurityContextConstraints: %w", err)
 	}
 
 	permissions.SecurityContextConstraints = sccs

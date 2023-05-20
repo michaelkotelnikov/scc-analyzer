@@ -12,10 +12,10 @@ type ServiceAccountSCC struct {
 }
 
 func CreateServiceAccountMap(p *Permissions, sa v1.ServiceAccount) *ServiceAccountSCC {
-	serviceAccountSCC := &ServiceAccountSCC{}
-
-	serviceAccountSCC.ServiceAccount = sa
-	serviceAccountSCC.SecurityContextConstraints = make([]openshiftsecurityv1.SecurityContextConstraints, 0)
+	serviceAccountSCC := &ServiceAccountSCC{
+		ServiceAccount:             sa,
+		SecurityContextConstraints: make([]openshiftsecurityv1.SecurityContextConstraints, 0),
+	}
 
 	serviceAccountSCC.BuildSCCByRole(p)
 	serviceAccountSCC.BuildSCCByUser(p)

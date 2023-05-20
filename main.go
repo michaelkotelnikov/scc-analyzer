@@ -18,6 +18,7 @@ func cmdUsage() {
 	_, err := io.WriteString(os.Stdout, message)
 	if err != nil {
 		log.Fatalf("Error: %v", err)
+
 		return
 	}
 
