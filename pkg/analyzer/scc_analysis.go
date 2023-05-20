@@ -1,7 +1,10 @@
 package analyzer
 
 import (
+	"fmt"
+	"reflect"
 	"strconv"
+	"strings"
 
 	openshiftsecurityv1 "github.com/openshift/api/security/v1"
 )
@@ -9,6 +12,7 @@ import (
 type Rules struct {
 	boolRules map[string]bool
 	typeRules map[string]string
+	listRules map[string][]string
 }
 
 func BuildRules() *Rules {
@@ -16,6 +20,7 @@ func BuildRules() *Rules {
 
 	rules.boolRules = make(map[string]bool)
 	rules.typeRules = make(map[string]string)
+	rules.listRules = make(map[string][]string)
 
 	rules.boolRules["allowHostIPC"] = false
 	rules.boolRules["allowHostNetwork"] = false
@@ -25,41 +30,90 @@ func BuildRules() *Rules {
 	rules.typeRules["seLinuxContext"] = "MustRunAs"
 	rules.typeRules["fsGroup"] = "MustRunAs"
 
+	rules.listRules["volumes"] = append(rules.listRules["volumes"],
+		"configMap", "downwardAPI", "emptyDir", "persistentVolumeClaim", "projected", "secret")
+
 	return rules
 }
 
 func (rules *Rules) EvaluateSCC(scc *openshiftsecurityv1.SecurityContextConstraints) map[string]string {
 	sccEvaluation := make(map[string]string)
 
-	if scc.AllowHostIPC != rules.boolRules["allowHostIPC"] {
-		msg := "allowHostIPC: " + strconv.FormatBool(scc.AllowHostIPC)
-		sccEvaluation["allowHostIPC"] = msg
-	}
-
-	if scc.AllowHostNetwork != rules.boolRules["allowHostNetwork"] {
-		msg := "allowHostNetwork: " + strconv.FormatBool(scc.AllowHostNetwork)
-		sccEvaluation["allowHostNetwork"] = msg
-	}
-
-	if scc.AllowPrivilegedContainer != rules.boolRules["allowPrivilegedContainer"] {
-		msg := "allowPrivilegedContainer: " + strconv.FormatBool(scc.AllowPrivilegedContainer)
-		sccEvaluation["allowPrivilegedContainer"] = msg
-	}
-
-	if string(scc.RunAsUser.Type) != rules.typeRules["runAsUser"] {
-		msg := "runAsUser.type: " + string(scc.RunAsUser.Type)
-		sccEvaluation["runAsUser"] = msg
-	}
-
-	if string(scc.SELinuxContext.Type) != rules.typeRules["seLinuxContext"] {
-		msg := "seLinuxContext.type: " + string(scc.SELinuxContext.Type)
-		sccEvaluation["seLinuxContext"] = msg
-	}
-
-	if string(scc.FSGroup.Type) != rules.typeRules["fsGroup"] {
-		msg := "fsGroup.type: " + string(scc.FSGroup.Type)
-		sccEvaluation["fsGroup"] = msg
-	}
+	rules.EvaluateTypes(&sccEvaluation, scc)
+	rules.EvaluateBools(&sccEvaluation, scc)
+	rules.EvaluateLists(&sccEvaluation, scc)
 
 	return sccEvaluation
+}
+
+func (rules *Rules) EvaluateLists(evaluation *map[string]string,
+	scc *openshiftsecurityv1.SecurityContextConstraints) {
+	var violatingItems []string
+	for rule, _ := range rules.listRules {
+		field := reflect.ValueOf(scc).Elem().FieldByNameFunc(func(fieldName string) bool {
+			return strings.EqualFold(fieldName, rule)
+		})
+		if field.IsValid() {
+			if field.Kind() == reflect.Slice {
+				sccItems := make([]string, field.Len())
+				for i := 0; i < field.Len(); i++ {
+					sccItems[i] = field.Index(i).String()
+				}
+				violation := false
+				for _, sccItem := range sccItems {
+					for _, listItem := range rules.listRules[rule] {
+						if listItem == sccItem {
+							violation = false
+							break
+						}
+						violation = true
+					}
+					if violation {
+						violatingItems = append(violatingItems, sccItem)
+					}
+				}
+				fmt.Println(violatingItems)
+				if len(violatingItems) > 0 {
+					violatingString := strings.Join(violatingItems, ", ")
+					msg := rule + ": [" + violatingString + "]"
+					(*evaluation)[rule] = msg
+				}
+			}
+		}
+	}
+}
+
+func (rules *Rules) EvaluateTypes(evaluation *map[string]string,
+	scc *openshiftsecurityv1.SecurityContextConstraints) {
+	for rule, _ := range rules.typeRules {
+		field := reflect.ValueOf(scc).Elem().FieldByNameFunc(func(fieldName string) bool {
+			return strings.EqualFold(fieldName, rule)
+		})
+		if field.IsValid() {
+			fieldValue := field.FieldByName("Type")
+			if fieldValue.IsValid() {
+				value := fieldValue.String()
+				if strings.ToLower(value) != strings.ToLower((rules.typeRules)[rule]) {
+					msg := rule + ".type: " + value
+					(*evaluation)[rule] = msg
+				}
+			}
+		}
+	}
+}
+
+func (rules *Rules) EvaluateBools(evaluation *map[string]string,
+	scc *openshiftsecurityv1.SecurityContextConstraints) {
+	for rule, _ := range rules.boolRules {
+		field := reflect.ValueOf(scc).Elem().FieldByNameFunc(func(fieldName string) bool {
+			return strings.EqualFold(fieldName, rule)
+		})
+		if field.IsValid() {
+			value := field.Bool()
+			if value != rules.boolRules[rule] {
+				msg := rule + ": " + strconv.FormatBool(value)
+				(*evaluation)[rule] = msg
+			}
+		}
+	}
 }
