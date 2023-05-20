@@ -61,7 +61,8 @@ func (rules *Rules) EvaluateSCC(scc *openshiftsecurityv1.SecurityContextConstrai
 }
 
 func (rules *Rules) EvaluateLists(evaluation *map[string]string,
-	scc *openshiftsecurityv1.SecurityContextConstraints) {
+	scc *openshiftsecurityv1.SecurityContextConstraints,
+) {
 	for _, rule := range rules.ListRules {
 		var violatingItems []string
 
@@ -105,7 +106,8 @@ func (rules *Rules) EvaluateLists(evaluation *map[string]string,
 }
 
 func (rules *Rules) EvaluateTypes(evaluation *map[string]string,
-	scc *openshiftsecurityv1.SecurityContextConstraints) {
+	scc *openshiftsecurityv1.SecurityContextConstraints,
+) {
 	for _, rule := range rules.TypeRules {
 		field := reflect.ValueOf(scc).Elem().FieldByNameFunc(func(fieldName string) bool {
 			return strings.EqualFold(fieldName, rule.Field)
@@ -126,7 +128,8 @@ func (rules *Rules) EvaluateTypes(evaluation *map[string]string,
 }
 
 func (rules *Rules) EvaluateBools(evaluation *map[string]string,
-	scc *openshiftsecurityv1.SecurityContextConstraints) {
+	scc *openshiftsecurityv1.SecurityContextConstraints,
+) {
 	for _, rule := range rules.BoolRules {
 		field := reflect.ValueOf(scc).Elem().FieldByNameFunc(func(fieldName string) bool {
 			return strings.EqualFold(fieldName, rule.Field)

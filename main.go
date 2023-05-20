@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os"
+
 	"scc-analyzer/pkg/analyzer"
 	"scc-analyzer/pkg/kube"
 
@@ -26,13 +27,13 @@ func cmdUsage() {
 func main() {
 	flag.Usage = cmdUsage
 
-	var namespace = flag.String(
+	namespace := flag.String(
 		"namespace",
 		"default",
 		"Specify the Namespace to run the analyzer on.",
 	)
 
-	var expand = flag.Bool(
+	expand := flag.Bool(
 		"expand",
 		false,
 		"Use flag to viauslize SCC rule description",
@@ -66,13 +67,15 @@ func main() {
 			"Namespace",
 			"Service Account",
 			"Rule Description",
-			"SCC"},
+			"SCC",
+		},
 		)
 	} else {
 		table.SetHeader([]string{
 			"Namespace",
 			"Service Account",
-			"SCC"},
+			"SCC",
+		},
 		)
 	}
 
