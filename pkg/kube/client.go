@@ -2,6 +2,7 @@ package kube
 
 import (
 	"context"
+	"fmt"
 
 	openshiftsecurityv1 "github.com/openshift/api/security/v1"
 	securityv1 "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
@@ -29,17 +30,17 @@ func NewClient(context string) (*Client, error) {
 
 	config, err := kubeConfig.ClientConfig()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to retrieve client configuration: %v", err)
 	}
 
 	kClient, err := clientset.NewForConfig(config)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to initiate Kubernetes client: %v", err)
 	}
 
 	sClient, err := securityv1.NewForConfig(config)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to initiate OpenShift Security client: %v", err)
 	}
 
 	return &Client{
@@ -51,7 +52,7 @@ func NewClient(context string) (*Client, error) {
 func (client *Client) GetClusterRoleBindings() ([]rbacv1.ClusterRoleBinding, error) {
 	list, err := client.KubeClient.RbacV1().ClusterRoleBindings().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to retrieve ClusterRoleBindings from Kubernetes client: %v", err)
 	}
 
 	return list.Items, nil
@@ -60,7 +61,7 @@ func (client *Client) GetClusterRoleBindings() ([]rbacv1.ClusterRoleBinding, err
 func (client *Client) GetClusterRoles() ([]rbacv1.ClusterRole, error) {
 	list, err := client.KubeClient.RbacV1().ClusterRoles().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to retrieve ClusterRoles from Kubernetes client: %v", err)
 	}
 
 	return list.Items, nil
@@ -69,7 +70,7 @@ func (client *Client) GetClusterRoles() ([]rbacv1.ClusterRole, error) {
 func (client *Client) GetServiceAccounts(namespace string) ([]v1.ServiceAccount, error) {
 	list, err := client.KubeClient.CoreV1().ServiceAccounts(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to retrieve ServiceAccounts from Kubernetes client: %v", err)
 	}
 
 	return list.Items, nil
@@ -78,7 +79,7 @@ func (client *Client) GetServiceAccounts(namespace string) ([]v1.ServiceAccount,
 func (client *Client) GetSecurityContextConstraints() ([]openshiftsecurityv1.SecurityContextConstraints, error) {
 	list, err := client.SecurityV1Client.SecurityContextConstraints().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to retrieve SecurityContextConstraints from OpenShift Security client: %v", err)
 	}
 
 	return list.Items, nil

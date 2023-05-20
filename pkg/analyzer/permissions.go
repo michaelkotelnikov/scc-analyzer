@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"fmt"
 	"scc-analyzer/pkg/kube"
 
 	openshiftsecurityv1 "github.com/openshift/api/security/v1"
@@ -30,28 +31,28 @@ func BuildPermissions(client *kube.Client, namespace string) (*Permissions, erro
 
 	sas, err := client.GetServiceAccounts(namespace)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to retrieve ServiceAccounts: %v", err)
 	}
 
 	permissions.ServiceAccounts = sas
 
 	crs, err := client.GetClusterRoles()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to retrieve ClusterRoles: %v", err)
 	}
 
 	permissions.ClusterRoles = crs
 
 	crbs, err := client.GetClusterRoleBindings()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to retrieve ClusterRoleBindings: %v", err)
 	}
 
 	permissions.ClusterRoleBindings = crbs
 
 	sccs, err := client.GetSecurityContextConstraints()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to retrieve SecurityContextConstraints: %v", err)
 	}
 
 	permissions.SecurityContextConstraints = sccs

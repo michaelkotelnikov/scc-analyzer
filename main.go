@@ -2,7 +2,8 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"io"
+	"log"
 	"os"
 	"scc-analyzer/pkg/analyzer"
 	"scc-analyzer/pkg/kube"
@@ -11,7 +12,14 @@ import (
 )
 
 func cmdUsage() {
-	fmt.Printf("Usage: %s [OPTIONS] argument ...\n", os.Args[0])
+	message := "Usage: " + os.Args[0] + " [OPTIONS] argument ...\n"
+
+	_, err := io.WriteString(os.Stdout, message)
+	if err != nil {
+		log.Fatalf("Error: %v", err)
+		return
+	}
+
 	flag.PrintDefaults()
 }
 
@@ -38,12 +46,12 @@ func main() {
 
 	client, err := kube.NewClient(context)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatalf("Error: %v", err)
 	}
 
 	perms, err := analyzer.BuildPermissions(client, *namespace)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatalf("Error: %v", err)
 	}
 
 	rows := [][]string{}

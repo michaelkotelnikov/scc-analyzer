@@ -78,17 +78,19 @@ func (rules *Rules) EvaluateLists(evaluation *map[string]string,
 				violation := false
 
 				for _, sccItem := range sccItems {
-					for _, listItem := range rule.Value.([]string) {
-						if listItem == sccItem {
-							violation = false
-							break
+					if ruleValues, ok := rule.Value.([]string); ok {
+						for _, listItem := range ruleValues {
+							if listItem == sccItem {
+								violation = false
+								break
+							}
+
+							violation = true
 						}
 
-						violation = true
-					}
-
-					if violation {
-						violatingItems = append(violatingItems, sccItem)
+						if violation {
+							violatingItems = append(violatingItems, sccItem)
+						}
 					}
 				}
 
@@ -112,9 +114,11 @@ func (rules *Rules) EvaluateTypes(evaluation *map[string]string,
 			fieldValue := field.FieldByName("Type")
 			if fieldValue.IsValid() {
 				value := fieldValue.String()
-				if !strings.EqualFold(value, rule.Value.(string)) {
-					msg := rule.Field + ".type: " + value
-					(*evaluation)[rule.Field] = msg
+				if ruleValue, ok := rule.Value.(string); ok {
+					if !strings.EqualFold(value, ruleValue) {
+						msg := rule.Field + ".type: " + value
+						(*evaluation)[rule.Field] = msg
+					}
 				}
 			}
 		}
@@ -138,9 +142,11 @@ func (rules *Rules) EvaluateBools(evaluation *map[string]string,
 				value = field.Elem().Bool()
 			}
 
-			if value != rule.Value.(bool) {
-				msg := rule.Field + ": " + strconv.FormatBool(value)
-				(*evaluation)[rule.Field] = msg
+			if ruleValue, ok := rule.Value.(bool); ok {
+				if value != ruleValue {
+					msg := rule.Field + ": " + strconv.FormatBool(value)
+					(*evaluation)[rule.Field] = msg
+				}
 			}
 		}
 	}
