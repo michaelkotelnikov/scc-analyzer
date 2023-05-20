@@ -3,7 +3,7 @@ package analyzer
 import (
 	"fmt"
 
-	"scc-analyzer/pkg/kube"
+	"github.com/michaelkotelnikov/scc-analyzer/scc-analyzer/pkg/kube"
 
 	openshiftsecurityv1 "github.com/openshift/api/security/v1"
 	v1 "k8s.io/api/core/v1"
