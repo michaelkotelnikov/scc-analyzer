@@ -17,11 +17,23 @@ func cmdUsage() {
 
 func main() {
 	flag.Usage = cmdUsage
-	var namespace = flag.String("namespace", "default", "Specify the Namespace to run the analyzer on.")
-	var expand = flag.Bool("expand", false, "Use flag to viauslize SCC rule description")
+
+	var namespace = flag.String(
+		"namespace",
+		"default",
+		"Specify the Namespace to run the analyzer on.",
+	)
+
+	var expand = flag.Bool(
+		"expand",
+		false,
+		"Use flag to viauslize SCC rule description",
+	)
+
 	flag.Parse()
 
 	context := ""
+
 	var rules *analyzer.Rules
 
 	client, err := kube.NewClient(context)
@@ -41,9 +53,19 @@ func main() {
 
 	if *expand {
 		rules = analyzer.BuildRules()
-		table.SetHeader([]string{"Namespace", "Service Account", "Rule Description", "SCC"})
+
+		table.SetHeader([]string{
+			"Namespace",
+			"Service Account",
+			"Rule Description",
+			"SCC"},
+		)
 	} else {
-		table.SetHeader([]string{"Namespace", "Service Account", "SCC"})
+		table.SetHeader([]string{
+			"Namespace",
+			"Service Account",
+			"SCC"},
+		)
 	}
 
 	for _, sa := range perms.ServiceAccounts {

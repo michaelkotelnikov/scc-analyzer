@@ -70,6 +70,7 @@ func (sas *ServiceAccountSCC) RemoveDuplicateSCCs() {
 	for _, scc := range sas.SecurityContextConstraints {
 		if _, value := allKeys[scc.Name]; !value {
 			allKeys[scc.Name] = true
+
 			list = append(list, scc)
 		}
 	}

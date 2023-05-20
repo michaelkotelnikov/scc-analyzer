@@ -64,6 +64,7 @@ func (rules *Rules) EvaluateLists(evaluation *map[string]string,
 	scc *openshiftsecurityv1.SecurityContextConstraints) {
 	for _, rule := range rules.ListRules {
 		var violatingItems []string
+
 		field := reflect.ValueOf(scc).Elem().FieldByNameFunc(func(fieldName string) bool {
 			return strings.EqualFold(fieldName, rule.Field)
 		})
@@ -73,19 +74,24 @@ func (rules *Rules) EvaluateLists(evaluation *map[string]string,
 				for i := 0; i < field.Len(); i++ {
 					sccItems[i] = field.Index(i).String()
 				}
+
 				violation := false
+
 				for _, sccItem := range sccItems {
 					for _, listItem := range rule.Value.([]string) {
 						if listItem == sccItem {
 							violation = false
 							break
 						}
+
 						violation = true
 					}
+
 					if violation {
 						violatingItems = append(violatingItems, sccItem)
 					}
 				}
+
 				if len(violatingItems) > 0 {
 					violatingString := strings.Join(violatingItems, ", ")
 					msg := rule.Field + ": [" + violatingString + "]"
@@ -106,7 +112,7 @@ func (rules *Rules) EvaluateTypes(evaluation *map[string]string,
 			fieldValue := field.FieldByName("Type")
 			if fieldValue.IsValid() {
 				value := fieldValue.String()
-				if strings.ToLower(value) != strings.ToLower(rule.Value.(string)) {
+				if !strings.EqualFold(value, rule.Value.(string)) {
 					msg := rule.Field + ".type: " + value
 					(*evaluation)[rule.Field] = msg
 				}
@@ -131,6 +137,7 @@ func (rules *Rules) EvaluateBools(evaluation *map[string]string,
 				}
 				value = field.Elem().Bool()
 			}
+
 			if value != rule.Value.(bool) {
 				msg := rule.Field + ": " + strconv.FormatBool(value)
 				(*evaluation)[rule.Field] = msg

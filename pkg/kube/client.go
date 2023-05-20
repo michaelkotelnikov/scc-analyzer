@@ -19,7 +19,6 @@ type Client struct {
 }
 
 func NewClient(context string) (*Client, error) {
-
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 
 	configOverrides := &clientcmd.ConfigOverrides{
@@ -27,6 +26,7 @@ func NewClient(context string) (*Client, error) {
 	}
 
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+
 	config, err := kubeConfig.ClientConfig()
 	if err != nil {
 		return nil, err

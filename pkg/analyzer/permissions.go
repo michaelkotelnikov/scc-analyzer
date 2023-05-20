@@ -32,24 +32,28 @@ func BuildPermissions(client *kube.Client, namespace string) (*Permissions, erro
 	if err != nil {
 		return nil, err
 	}
+
 	permissions.ServiceAccounts = sas
 
 	crs, err := client.GetClusterRoles()
 	if err != nil {
 		return nil, err
 	}
+
 	permissions.ClusterRoles = crs
 
 	crbs, err := client.GetClusterRoleBindings()
 	if err != nil {
 		return nil, err
 	}
+
 	permissions.ClusterRoleBindings = crbs
 
 	sccs, err := client.GetSecurityContextConstraints()
 	if err != nil {
 		return nil, err
 	}
+
 	permissions.SecurityContextConstraints = sccs
 
 	return permissions, nil
