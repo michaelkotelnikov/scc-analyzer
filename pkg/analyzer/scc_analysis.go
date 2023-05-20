@@ -8,30 +8,44 @@ import (
 	openshiftsecurityv1 "github.com/openshift/api/security/v1"
 )
 
+type Rule struct {
+	Field string
+	Value interface{}
+}
+
 type Rules struct {
-	boolRules map[string]bool
-	typeRules map[string]string
-	listRules map[string][]string
+	BoolRules []Rule
+	TypeRules []Rule
+	ListRules []Rule
 }
 
 func BuildRules() *Rules {
 	rules := &Rules{}
 
-	rules.boolRules = make(map[string]bool)
-	rules.typeRules = make(map[string]string)
-	rules.listRules = make(map[string][]string)
+	rules.BoolRules = []Rule{
+		{Field: "allowHostIPC", Value: false},
+		{Field: "allowHostNetwork", Value: false},
+		{Field: "allowPrivilegedContainer", Value: false},
+		{Field: "allowHostDirVolumePlugin", Value: false},
+		{Field: "allowHostPID", Value: false},
+		{Field: "allowHostPorts", Value: false},
+		{Field: "allowPrivilegeEscalation", Value: false},
+	}
 
-	rules.boolRules["allowHostIPC"] = false
-	rules.boolRules["allowHostNetwork"] = false
-	rules.boolRules["allowPrivilegedContainer"] = false
+	rules.TypeRules = []Rule{
+		{Field: "runAsUser", Value: "MustRunAsRange"},
+		{Field: "seLinuxContext", Value: "MustRunAs"},
+		{Field: "fsGroup", Value: "MustRunAs"},
+	}
 
-	rules.typeRules["runAsUser"] = "MustRunAsRange"
-	rules.typeRules["seLinuxContext"] = "MustRunAs"
-	rules.typeRules["fsGroup"] = "MustRunAs"
-
-	rules.listRules["volumes"] = append(rules.listRules["volumes"],
-		"configMap", "downwardAPI", "emptyDir", "persistentVolumeClaim", "projected", "secret")
-	rules.listRules["allowedCapabilities"] = append(rules.listRules["allowedCapabilities"], "NET_BIND_SERVICE")
+	rules.ListRules = []Rule{
+		{Field: "volumes", Value: []string{
+			"configMap", "downwardAPI", "emptyDir", "persistentVolumeClaim", "projected", "secret",
+		}},
+		{Field: "allowedCapabilities", Value: []string{
+			"NET_BIND_SERVICE",
+		}},
+	}
 
 	return rules
 }
@@ -48,10 +62,10 @@ func (rules *Rules) EvaluateSCC(scc *openshiftsecurityv1.SecurityContextConstrai
 
 func (rules *Rules) EvaluateLists(evaluation *map[string]string,
 	scc *openshiftsecurityv1.SecurityContextConstraints) {
-	for rule := range rules.listRules {
+	for _, rule := range rules.ListRules {
 		var violatingItems []string
 		field := reflect.ValueOf(scc).Elem().FieldByNameFunc(func(fieldName string) bool {
-			return strings.EqualFold(fieldName, rule)
+			return strings.EqualFold(fieldName, rule.Field)
 		})
 		if field.IsValid() {
 			if field.Kind() == reflect.Slice {
@@ -61,7 +75,7 @@ func (rules *Rules) EvaluateLists(evaluation *map[string]string,
 				}
 				violation := false
 				for _, sccItem := range sccItems {
-					for _, listItem := range rules.listRules[rule] {
+					for _, listItem := range rule.Value.([]string) {
 						if listItem == sccItem {
 							violation = false
 							break
@@ -74,8 +88,8 @@ func (rules *Rules) EvaluateLists(evaluation *map[string]string,
 				}
 				if len(violatingItems) > 0 {
 					violatingString := strings.Join(violatingItems, ", ")
-					msg := rule + ": [" + violatingString + "]"
-					(*evaluation)[rule] = msg
+					msg := rule.Field + ": [" + violatingString + "]"
+					(*evaluation)[rule.Field] = msg
 				}
 			}
 		}
@@ -84,17 +98,17 @@ func (rules *Rules) EvaluateLists(evaluation *map[string]string,
 
 func (rules *Rules) EvaluateTypes(evaluation *map[string]string,
 	scc *openshiftsecurityv1.SecurityContextConstraints) {
-	for rule := range rules.typeRules {
+	for _, rule := range rules.TypeRules {
 		field := reflect.ValueOf(scc).Elem().FieldByNameFunc(func(fieldName string) bool {
-			return strings.EqualFold(fieldName, rule)
+			return strings.EqualFold(fieldName, rule.Field)
 		})
 		if field.IsValid() {
 			fieldValue := field.FieldByName("Type")
 			if fieldValue.IsValid() {
 				value := fieldValue.String()
-				if strings.ToLower(value) != strings.ToLower((rules.typeRules)[rule]) {
-					msg := rule + ".type: " + value
-					(*evaluation)[rule] = msg
+				if strings.ToLower(value) != strings.ToLower(rule.Value.(string)) {
+					msg := rule.Field + ".type: " + value
+					(*evaluation)[rule.Field] = msg
 				}
 			}
 		}
@@ -103,15 +117,23 @@ func (rules *Rules) EvaluateTypes(evaluation *map[string]string,
 
 func (rules *Rules) EvaluateBools(evaluation *map[string]string,
 	scc *openshiftsecurityv1.SecurityContextConstraints) {
-	for rule := range rules.boolRules {
+	for _, rule := range rules.BoolRules {
 		field := reflect.ValueOf(scc).Elem().FieldByNameFunc(func(fieldName string) bool {
-			return strings.EqualFold(fieldName, rule)
+			return strings.EqualFold(fieldName, rule.Field)
 		})
 		if field.IsValid() {
-			value := field.Bool()
-			if value != rules.boolRules[rule] {
-				msg := rule + ": " + strconv.FormatBool(value)
-				(*evaluation)[rule] = msg
+			var value bool
+			if field.Kind() == reflect.Bool {
+				value = field.Bool()
+			} else if field.Kind() == reflect.Ptr && field.Type().Elem().Kind() == reflect.Bool {
+				if field.IsNil() {
+					continue
+				}
+				value = field.Elem().Bool()
+			}
+			if value != rule.Value.(bool) {
+				msg := rule.Field + ": " + strconv.FormatBool(value)
+				(*evaluation)[rule.Field] = msg
 			}
 		}
 	}
