@@ -11,24 +11,24 @@ type ServiceAccountSCC struct {
 	SecurityContextConstraints []openshiftsecurityv1.SecurityContextConstraints
 }
 
-func CreateServiceAccountMap(p *Permissions, sa v1.ServiceAccount) *ServiceAccountSCC {
+func CreateServiceAccountMap(permissions *Permissions, sa v1.ServiceAccount) *ServiceAccountSCC {
 	serviceAccountSCC := &ServiceAccountSCC{
 		ServiceAccount:             sa,
 		SecurityContextConstraints: make([]openshiftsecurityv1.SecurityContextConstraints, 0),
 	}
 
-	serviceAccountSCC.BuildSCCByRole(p)
-	serviceAccountSCC.BuildSCCByUser(p)
+	serviceAccountSCC.BuildSCCByRole(permissions)
+	serviceAccountSCC.BuildSCCByUser(permissions)
 
 	serviceAccountSCC.RemoveDuplicateSCCs()
 
 	return serviceAccountSCC
 }
 
-func (sas *ServiceAccountSCC) BuildSCCByRole(p *Permissions) {
+func (sas *ServiceAccountSCC) BuildSCCByRole(permissions *Permissions) {
 	var usedSCCNames []string
 
-	serviceAccountClusterRoles := p.BuildServiceAccountClusterRoles(sas.ServiceAccount)
+	serviceAccountClusterRoles := permissions.BuildServiceAccountClusterRoles(sas.ServiceAccount)
 
 	for _, clusterRole := range serviceAccountClusterRoles {
 		for _, rule := range clusterRole.Rules {
@@ -42,7 +42,7 @@ func (sas *ServiceAccountSCC) BuildSCCByRole(p *Permissions) {
 		}
 	}
 
-	for _, scc := range p.SecurityContextConstraints {
+	for _, scc := range permissions.SecurityContextConstraints {
 		for _, sccName := range usedSCCNames {
 			if scc.Name == sccName {
 				sas.SecurityContextConstraints = append(sas.SecurityContextConstraints, scc)
@@ -51,10 +51,10 @@ func (sas *ServiceAccountSCC) BuildSCCByRole(p *Permissions) {
 	}
 }
 
-func (sas *ServiceAccountSCC) BuildSCCByUser(p *Permissions) {
+func (sas *ServiceAccountSCC) BuildSCCByUser(permissions *Permissions) {
 	saString := "system:serviceaccount:" + sas.ServiceAccount.Namespace + ":" + sas.ServiceAccount.Name
 
-	for _, scc := range p.SecurityContextConstraints {
+	for _, scc := range permissions.SecurityContextConstraints {
 		for _, user := range scc.Users {
 			if user == saString {
 				sas.SecurityContextConstraints = append(sas.SecurityContextConstraints, scc)

@@ -37,14 +37,12 @@ func main() {
 	expand := flag.Bool(
 		"expand",
 		false,
-		"Use flag to viauslize SCC rule description",
+		"Use flag to visualize SCC rule description",
 	)
 
 	flag.Parse()
 
 	context := ""
-
-	var rules *analyzer.Rules
 
 	client, err := kube.NewClient(context)
 	if err != nil {
@@ -56,44 +54,56 @@ func main() {
 		log.Fatalf("Error: %v", err)
 	}
 
-	rows := [][]string{}
+	var rules *analyzer.Rules
+	if *expand {
+		rules = analyzer.BuildRules()
+	}
+
+	rows := generateRows(perms, rules, *namespace, *expand)
+
+	printTable(rows, *expand)
+}
+
+func generateRows(perms *analyzer.Permissions, rules *analyzer.Rules, namespace string, expand bool) [][]string {
+	var rows [][]string
+
+	for _, serviceAccount := range perms.ServiceAccounts {
+		saSCC := analyzer.CreateServiceAccountMap(perms, serviceAccount)
+		for _, scc := range saSCC.SecurityContextConstraints {
+			if expand {
+				evaluations := rules.EvaluateSCC(scc)
+				for _, evaluation := range evaluations {
+					row := []string{namespace, serviceAccount.Name, evaluation, scc.Name}
+					rows = append(rows, row)
+				}
+			} else {
+				row := []string{namespace, serviceAccount.Name, scc.Name}
+				rows = append(rows, row)
+			}
+		}
+	}
+
+	return rows
+}
+
+func printTable(rows [][]string, expand bool) {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetRowLine(true)
 	table.SetAutoMergeCellsByColumnIndex([]int{0, 1})
 
-	if *expand {
-		rules = analyzer.BuildRules()
-
+	if expand {
 		table.SetHeader([]string{
 			"Namespace",
 			"Service Account",
 			"Rule Description",
 			"SCC",
-		},
-		)
+		})
 	} else {
 		table.SetHeader([]string{
 			"Namespace",
 			"Service Account",
 			"SCC",
-		},
-		)
-	}
-
-	for _, sa := range perms.ServiceAccounts {
-		saSCC := analyzer.CreateServiceAccountMap(perms, sa)
-		for _, scc := range saSCC.SecurityContextConstraints {
-			if *expand {
-				evaluations := rules.EvaluateSCC(&scc)
-				for _, evaluation := range evaluations {
-					row := []string{*namespace, sa.Name, evaluation, scc.Name}
-					rows = append(rows, row)
-				}
-			} else {
-				row := []string{*namespace, sa.Name, scc.Name}
-				rows = append(rows, row)
-			}
-		}
+		})
 	}
 
 	table.AppendBulk(rows)

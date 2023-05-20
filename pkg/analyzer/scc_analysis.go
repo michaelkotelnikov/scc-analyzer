@@ -54,78 +54,80 @@ func BuildRules() *Rules {
 	return rules
 }
 
-func (rules *Rules) EvaluateSCC(scc *openshiftsecurityv1.SecurityContextConstraints) map[string]string {
+func (rules *Rules) EvaluateSCC(scc openshiftsecurityv1.SecurityContextConstraints) map[string]string {
 	sccEvaluation := make(map[string]string)
 
-	rules.EvaluateTypes(&sccEvaluation, scc)
-	rules.EvaluateBools(&sccEvaluation, scc)
-	rules.EvaluateLists(&sccEvaluation, scc)
+	rules.EvaluateTypes(&sccEvaluation, &scc)
+	rules.EvaluateBools(&sccEvaluation, &scc)
+	rules.EvaluateLists(&sccEvaluation, &scc)
 
 	return sccEvaluation
 }
 
-func (rules *Rules) EvaluateLists(evaluation *map[string]string,
-	scc *openshiftsecurityv1.SecurityContextConstraints,
-) {
+func (rules *Rules) EvaluateLists(evaluation *map[string]string, scc *openshiftsecurityv1.SecurityContextConstraints) {
 	for _, rule := range rules.ListRules {
-		var violatingItems []string
+		violatingItems := getViolatingItems(rule, scc)
+		if len(violatingItems) > 0 {
+			violatingString := strings.Join(violatingItems, ", ")
+			msg := rule.Field + ": [" + violatingString + "]"
+			(*evaluation)[rule.Field] = msg
+		}
+	}
+}
 
-		field := reflect.ValueOf(scc).Elem().FieldByNameFunc(func(fieldName string) bool {
-			return strings.EqualFold(fieldName, rule.Field)
-		})
-		if field.IsValid() {
-			if field.Kind() == reflect.Slice {
-				sccItems := make([]string, field.Len())
-				for i := 0; i < field.Len(); i++ {
-					sccItems[i] = field.Index(i).String()
-				}
+func getViolatingItems(rule Rule, scc *openshiftsecurityv1.SecurityContextConstraints) []string {
+	var violatingItems []string
 
-				violation := false
+	field := reflect.ValueOf(scc).Elem().FieldByNameFunc(func(fieldName string) bool {
+		return strings.EqualFold(fieldName, rule.Field)
+	})
 
-				for _, sccItem := range sccItems {
-					if ruleValues, ok := rule.Value.([]string); ok {
-						for _, listItem := range ruleValues {
-							if listItem == sccItem {
-								violation = false
+	if field.IsValid() && field.Kind() == reflect.Slice {
+		sccItems := make([]string, field.Len())
+		for i := 0; i < field.Len(); i++ {
+			sccItems[i] = field.Index(i).String()
+		}
 
-								break
-							}
-
-							violation = true
-						}
-
-						if violation {
-							violatingItems = append(violatingItems, sccItem)
-						}
-					}
-				}
-
-				if len(violatingItems) > 0 {
-					violatingString := strings.Join(violatingItems, ", ")
-					msg := rule.Field + ": [" + violatingString + "]"
-					(*evaluation)[rule.Field] = msg
-				}
+		for _, sccItem := range sccItems {
+			if violation := isViolation(sccItem, rule); violation {
+				violatingItems = append(violatingItems, sccItem)
 			}
 		}
 	}
+
+	return violatingItems
+}
+
+func isViolation(sccItem string, rule Rule) bool {
+	if ruleValues, ok := rule.Value.([]string); ok {
+		for _, listItem := range ruleValues {
+			if listItem == sccItem {
+				return false
+			}
+		}
+
+		return true
+	}
+
+	return false
 }
 
 func (rules *Rules) EvaluateTypes(evaluation *map[string]string,
 	scc *openshiftsecurityv1.SecurityContextConstraints,
 ) {
 	for _, rule := range rules.TypeRules {
+		fieldString := rule.Field
 		field := reflect.ValueOf(scc).Elem().FieldByNameFunc(func(fieldName string) bool {
-			return strings.EqualFold(fieldName, rule.Field)
+			return strings.EqualFold(fieldName, fieldString)
 		})
+
 		if field.IsValid() {
 			fieldValue := field.FieldByName("Type")
 			if fieldValue.IsValid() {
 				value := fieldValue.String()
-				if ruleValue, ok := rule.Value.(string); ok {
-					if !strings.EqualFold(value, ruleValue) {
-						msg := rule.Field + ".type: " + value
-						(*evaluation)[rule.Field] = msg
-					}
+				if ruleValue, ok := rule.Value.(string); ok && !strings.EqualFold(value, ruleValue) {
+					msg := rule.Field + ".type: " + value
+					(*evaluation)[rule.Field] = msg
 				}
 			}
 		}
@@ -136,26 +138,28 @@ func (rules *Rules) EvaluateBools(evaluation *map[string]string,
 	scc *openshiftsecurityv1.SecurityContextConstraints,
 ) {
 	for _, rule := range rules.BoolRules {
+		fieldString := rule.Field
 		field := reflect.ValueOf(scc).Elem().FieldByNameFunc(func(fieldName string) bool {
-			return strings.EqualFold(fieldName, rule.Field)
+			return strings.EqualFold(fieldName, fieldString)
 		})
-		if field.IsValid() {
-			var value bool
-			if field.Kind() == reflect.Bool {
-				value = field.Bool()
-			} else if field.Kind() == reflect.Ptr && field.Type().Elem().Kind() == reflect.Bool {
-				if field.IsNil() {
-					continue
-				}
-				value = field.Elem().Bool()
-			}
 
-			if ruleValue, ok := rule.Value.(bool); ok {
-				if value != ruleValue {
-					msg := rule.Field + ": " + strconv.FormatBool(value)
-					(*evaluation)[rule.Field] = msg
-				}
+		if !field.IsValid() {
+			continue
+		}
+
+		var value bool
+		if field.Kind() == reflect.Bool {
+			value = field.Bool()
+		} else if field.Kind() == reflect.Ptr && field.Type().Elem().Kind() == reflect.Bool {
+			if field.IsNil() {
+				continue
 			}
+			value = field.Elem().Bool()
+		}
+
+		if ruleValue, ok := rule.Value.(bool); ok && value != ruleValue {
+			msg := rule.Field + ": " + strconv.FormatBool(value)
+			(*evaluation)[rule.Field] = msg
 		}
 	}
 }

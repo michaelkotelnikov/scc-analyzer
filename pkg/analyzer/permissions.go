@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"fmt"
+
 	"scc-analyzer/pkg/kube"
 
 	openshiftsecurityv1 "github.com/openshift/api/security/v1"
@@ -60,13 +61,13 @@ func BuildPermissions(client *kube.Client, namespace string) (*Permissions, erro
 	return permissions, nil
 }
 
-func (p *Permissions) BuildServiceAccountClusterRoles(sa v1.ServiceAccount) []rbacv1.ClusterRole {
+func (permissions *Permissions) BuildServiceAccountClusterRoles(sa v1.ServiceAccount) []rbacv1.ClusterRole {
 	var serviceAccountPermissions []rbacv1.ClusterRole
 
-	for _, crb := range p.ClusterRoleBindings {
+	for _, crb := range permissions.ClusterRoleBindings {
 		for _, subject := range crb.Subjects {
 			if subject.Name == sa.Name && subject.Namespace == sa.Namespace {
-				for _, cr := range p.ClusterRoles {
+				for _, cr := range permissions.ClusterRoles {
 					if crb.RoleRef.Name == cr.Name {
 						serviceAccountPermissions = append(serviceAccountPermissions, cr)
 					}
