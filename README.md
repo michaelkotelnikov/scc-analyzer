@@ -1,5 +1,7 @@
 # scc-analyzer
 
+[![goreportcard](https://goreportcard.com/badge/github.com/michaelkotelnikov/scc-analyzer)](https://goreportcard.com/report/github.com/michaelkotelnikov/scc-analyzer)
+
 ```
 $ scc-analyzer --namespace prometheus-michael --expand
 +--------------------+-----------------+--------------------------------+------------+
