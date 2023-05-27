@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 
-	"scc-analyzer/pkg/analyzer"
-	"scc-analyzer/pkg/kube"
+	"github.com/michaelkotelnikov/scc-analyzer/pkg/analyzer"
+	"github.com/michaelkotelnikov/scc-analyzer/pkg/kube"
 
 	"github.com/olekukonko/tablewriter"
 )

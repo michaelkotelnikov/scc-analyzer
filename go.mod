@@ -1,4 +1,4 @@
-module scc-analyzer
+module github.com/michaelkotelnikov/scc-analyzer
 
 go 1.20
 
